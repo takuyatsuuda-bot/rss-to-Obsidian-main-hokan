@@ -1,0 +1,12 @@
+
+# Obsidian specific
+.obsidian/workspace.json
+.obsidian/workspace-mobile.json
+.obsidian/workspace-desktop.json
+.obsidian/core-plugins.json
+.obsidian/appearance.json
+.obsidian/hotkeys.json
+
+# System specific
+.DS_Store
+.Trash/
