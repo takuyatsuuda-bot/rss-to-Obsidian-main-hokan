@@ -199,7 +199,7 @@ def fetch_rss_feeds():
 
     # Generate curated news
     if all_articles:
-        print("Starting curation with Gemini...")
+        print(f"Starting curation with Gemini at {datetime.datetime.now()}...")
         generate_curated_news(all_articles, current_date_str)
     else:
         print("No articles found to curate.")
