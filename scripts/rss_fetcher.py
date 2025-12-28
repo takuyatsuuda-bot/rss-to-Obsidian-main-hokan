@@ -103,16 +103,16 @@ def fetch_rss_feeds():
             feed = feedparser.parse(url)
             entries = []
             
-            for entry in feed.entries:
-                # Parse publication date
+            for entry in feed.entries[:5]: 
+                # Parse publication date for display
                 published_time = None
                 if hasattr(entry, 'published_parsed') and entry.published_parsed:
                      published_time = datetime.datetime(*entry.published_parsed[:6], tzinfo=pytz.utc).astimezone(jst)
                 elif hasattr(entry, 'updated_parsed') and entry.updated_parsed:
                     published_time = datetime.datetime(*entry.updated_parsed[:6], tzinfo=pytz.utc).astimezone(jst)
                 
-                if published_time and published_time > yesterday:
-                    entries.append(entry)
+                # Always add top 5
+                entries.append(entry)
             
             if entries:
                 has_updates = True
