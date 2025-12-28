@@ -195,9 +195,14 @@ def fetch_rss_feeds():
     
     print(f"Successfully finished RSS fetch. Saved to {filename}")
 
+    print(f"Total articles found for curation: {len(all_articles)}")
+
     # Generate curated news
     if all_articles:
+        print("Starting curation with Gemini...")
         generate_curated_news(all_articles, current_date_str)
+    else:
+        print("No articles found to curate.")
 
 if __name__ == "__main__":
     fetch_rss_feeds()
