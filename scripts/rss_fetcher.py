@@ -84,6 +84,16 @@ def generate_curated_news(articles, date_str):
         
     except Exception as e:
         print(f"Error generating curated news: {e}")
+        error_log = f"# Error Log ({datetime.datetime.now()})\n\nError generating curated news:\n{str(e)}"
+        
+        # Ensure directory exists (even if generation failed)
+        output_dir = "毎日のAIニュース取得/今日の注目ニュース"
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+            
+        error_filename = os.path.join(output_dir, "Error_Log.md")
+        with open(error_filename, 'w', encoding='utf-8') as f:
+            f.write(error_log)
 
 def fetch_rss_feeds():
     jst = pytz.timezone('Asia/Tokyo')
