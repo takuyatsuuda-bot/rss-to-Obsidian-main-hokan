@@ -35,12 +35,14 @@ def generate_curated_news(articles, date_str):
     """Generate curated news using Gemini API."""
     api_key = os.environ.get("GEMINI_API_KEY")
     if not api_key:
-        print("GEMINI_API_KEY not found. Skipping curation.")
+        print("GEMINI_API_KEY not found in environment variables. Curation skipped.")
         return
 
+    print("GEMINI_API_KEY found. Configuring GenAI...")
     try:
         genai.configure(api_key=api_key)
         model = genai.GenerativeModel('gemini-pro')
+        print("Model configured.")
         
         # Prepare article list for prompt
         articles_text = ""
