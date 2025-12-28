@@ -12,7 +12,9 @@ RSS_FEEDS = {
     "techcrunch": "https://techcrunch.com/feed/",
     "wired_jp": "https://wired.jp/rss/",
     "gihyo": "https://gihyo.jp/feed/rss2",
-    "codezine": "https://codezine.jp/rss/new/20/index.xml"
+    "codezine": "https://codezine.jp/rss/new/20/index.xml",
+    "shift_ai": "https://shift-ai.co.jp/blog/feed/",
+    "ai_sokuho": "https://aisokuho.com/feed/"
 }
 
 # Feeds that need translation (English sources)
