@@ -115,7 +115,7 @@ def fetch_rss_feeds():
         content += "No new articles in the last 24 hours.\n"
 
     # Ensure RSS directory exists
-    output_dir = "RSS"
+    output_dir = "毎日のAIニュース取得"
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
