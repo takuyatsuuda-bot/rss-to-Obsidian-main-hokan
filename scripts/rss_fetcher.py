@@ -114,6 +114,21 @@ def fetch_rss_feeds(target_date=None):
     has_updates = False
     all_articles = [] # Store all fetched articles for curation
 
+    # Load previous day's URLs to prevent duplicates
+    seen_urls = set()
+    prev_filename = os.path.join("00_毎日のAIニュース取得", f"{yesterday.strftime('%Y-%m-%d')}_RSS_Feed.md")
+    if os.path.exists(prev_filename):
+        try:
+            with open(prev_filename, 'r', encoding='utf-8') as f:
+                prev_content = f.read()
+                # Simple extraction of markdown links: ](url)
+                import re
+                links = re.findall(r'\]\((https?://[^)]+)\)', prev_content)
+                seen_urls.update(links)
+            print(f"Loaded {len(seen_urls)} URLs from yesterday's file for deduplication.")
+        except Exception as e:
+            print(f"vWarning: Could not read previous file for deduplication: {e}")
+
     for name, url in RSS_FEEDS.items():
         try:
             feed = feedparser.parse(url)
@@ -135,6 +150,10 @@ def fetch_rss_feeds(target_date=None):
                     if published_time > now: # Skip future posts if any
                         continue
                 
+                # Deduplicate against yesterday's file
+                if entry.link in seen_urls:
+                    continue
+
                 entries.append(entry)
                 if len(entries) >= 5:
                     break
