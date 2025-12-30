@@ -95,9 +95,13 @@ def generate_curated_news(articles, date_str):
         with open(error_filename, 'w', encoding='utf-8') as f:
             f.write(error_log)
 
-def fetch_rss_feeds():
+def fetch_rss_feeds(target_date=None):
     jst = pytz.timezone('Asia/Tokyo')
-    now = datetime.datetime.now(jst)
+    if target_date:
+        now = target_date
+    else:
+        now = datetime.datetime.now(jst)
+    
     yesterday = now - datetime.timedelta(hours=24)
     
     # Initialize translator
@@ -115,7 +119,8 @@ def fetch_rss_feeds():
             feed = feedparser.parse(url)
             entries = []
             
-            for entry in feed.entries[:5]: 
+            # Check more entries to find eligible ones after filtering
+            for entry in feed.entries[:20]: 
                 # Parse publication date for display
                 published_time = None
                 if hasattr(entry, 'published_parsed') and entry.published_parsed:
@@ -123,8 +128,16 @@ def fetch_rss_feeds():
                 elif hasattr(entry, 'updated_parsed') and entry.updated_parsed:
                     published_time = datetime.datetime(*entry.updated_parsed[:6], tzinfo=pytz.utc).astimezone(jst)
                 
-                # Always add top 5
+                # Filter by date (within last 24 hours)
+                if published_time:
+                    if published_time < yesterday:
+                        continue
+                    if published_time > now: # Skip future posts if any
+                        continue
+                
                 entries.append(entry)
+                if len(entries) >= 5:
+                    break
             
             if entries:
                 has_updates = True
@@ -216,5 +229,26 @@ def fetch_rss_feeds():
     else:
         print("No articles found to curate.")
 
+    print("No articles found to curate.")
+
 if __name__ == "__main__":
-    fetch_rss_feeds()
+    import argparse
+    import sys
+    
+    parser = argparse.ArgumentParser(description='Fetch RSS feeds.')
+    parser.add_argument('--date', type=str, help='Target date in YYYY-MM-DD format')
+    args = parser.parse_args()
+
+    target_date = None
+    if args.date:
+        try:
+            # Set target time to 08:00 JST on the specified date to match cron schedule
+            date_obj = datetime.datetime.strptime(args.date, '%Y-%m-%d')
+            jst = pytz.timezone('Asia/Tokyo')
+            target_date = jst.localize(date_obj.replace(hour=8, minute=0, second=0, microsecond=0))
+            print(f"Running for target date: {target_date}")
+        except ValueError:
+            print("Invalid date format. Use YYYY-MM-DD")
+            sys.exit(1)
+
+    fetch_rss_feeds(target_date)
