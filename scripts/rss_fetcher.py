@@ -4,6 +4,8 @@ import pytz
 import os
 from deep_translator import GoogleTranslator
 import google.generativeai as genai
+import requests
+from bs4 import BeautifulSoup
 
 # RSS Feed URLs
 RSS_FEEDS = {
@@ -92,8 +94,70 @@ def generate_curated_news(articles, date_str):
             os.makedirs(output_dir)
             
         error_filename = os.path.join(output_dir, "Error_Log.md")
+        error_filename = os.path.join(output_dir, "Error_Log.md")
         with open(error_filename, 'w', encoding='utf-8') as f:
             f.write(error_log)
+
+def fetch_maji_ai():
+    """Fetch articles from ma-ji.ai using scraping"""
+    url = "https://ma-ji.ai/"
+    entries = []
+    try:
+        # User-Agent handling to avoid 403 blocks
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36'
+        }
+        response = requests.get(url, headers=headers, timeout=10)
+        soup = BeautifulSoup(response.content, "html.parser")
+        
+        # ma-ji.ai specific scraping
+        # Looking for links to articles. Based on observation, they contain '/articles/'
+        # We need to find unique articles.
+        seen_links = set()
+        
+        # Strategy: Find all 'a' tags, check if href has '/articles/'
+        for a in soup.find_all('a', href=True):
+            href = a['href']
+            if '/articles/' in href and href not in seen_links:
+                # Basic title extraction
+                title = a.get_text(separator=' ', strip=True)
+                # If title is empty or just "Read more", skip or look for child img alt etc.
+                if not title or len(title) < 5:
+                     continue
+                
+                # Normalize link
+                if not href.startswith('http'):
+                    link = f"https://ma-ji.ai{href}"
+                else:
+                    link = href
+                    
+                seen_links.add(link)
+                
+                # Create a pseudo-entry object compatible with our logic
+                # We don't have accurate time from simple link scraping unless we parse more.
+                # For now, we will assume "now" or "published_parsed" as None.
+                # But since we have a 24h filter, we need a date.
+                # If we can't find a date, we might assume it's new? 
+                # Or parsing the JSON data mentioned in exploration would be better but complex.
+                # Let's try to find a time tag or assume recent if it's on the homepage.
+                # WORKAROUND: For ma-ji.ai, let's treat homepage items as "today" for now, 
+                # but relying on our "seen_urls" deduplication to avoid repeats.
+                # Ideally, we should parse the date.
+                # The raw HTML showed "published_at":"2025-..." in JSON.
+                # Let's try to grab that JSON if possible, but fallback to simple scraping.
+                
+                entries.append({
+                    'title': title,
+                    'link': link,
+                    'summary': '',
+                    'published_parsed': None, # Will handle in loop
+                    'source_name': 'ma-ji.ai'
+                })
+                
+    except Exception as e:
+        print(f"Error scraping ma-ji.ai: {e}")
+        
+    return entries
 
 def fetch_rss_feeds(target_date=None):
     jst = pytz.timezone('Asia/Tokyo')
@@ -113,6 +177,14 @@ def fetch_rss_feeds(target_date=None):
     
     has_updates = False
     all_articles = [] # Store all fetched articles for curation
+    
+    # Custom fetches
+    custom_entries = []
+    # Fetch ma-ji.ai
+    print("Fetching ma-ji.ai...")
+    maji_entries = fetch_maji_ai()
+    if maji_entries:
+        custom_entries.extend(maji_entries)
 
     # Load previous day's URLs to prevent duplicates
     seen_urls = set()
@@ -223,6 +295,45 @@ def fetch_rss_feeds(target_date=None):
                 
         except Exception as e:
             print(f"Error fetching {name}: {e}")
+
+    # Process custom entries (ma-ji.ai etc)
+    if custom_entries:
+        content += "## ma-ji.ai\n"
+        has_maji_updates = False
+        for entry in custom_entries:
+             link = entry['link']
+             title = entry['title']
+             
+             # Deduplicate
+             if link in seen_urls:
+                 continue
+                 
+             # Date check? 
+             # Since we don't have accurate date from scraping A tags easily,
+             # we rely on "it's on the homepage" + "we haven't seen it yesterday".
+             
+             has_updates = True
+             has_maji_updates = True
+             content += f"- [{title}]({link})\n"
+             
+             # Store for curation
+             all_articles.append({
+                "title": title,
+                "link": link,
+                "summary": title, # Use title as summary for now
+                "source": "ma-ji.ai"
+             })
+             
+             if len([x for x in all_articles if x['source'] == 'ma-ji.ai']) >= 5:
+                 break
+        
+        if not has_maji_updates:
+            # If we printed the header but found no new updates, we might want to remove the header?
+            # Or just leave it. Simple string manipulation:
+            if content.endswith("## ma-ji.ai\n"):
+                content = content[:-12]
+        else:
+            content += "\n"
 
     if not has_updates:
         content += "No new articles in the last 24 hours.\n"

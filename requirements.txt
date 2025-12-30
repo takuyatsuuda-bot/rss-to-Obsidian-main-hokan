@@ -2,3 +2,5 @@ feedparser
 pytz
 deep-translator
 google-generativeai
+requests
+beautifulsoup4
