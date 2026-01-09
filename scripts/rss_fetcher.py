@@ -75,7 +75,7 @@ def generate_curated_news(articles, date_str):
         curated_content = f"# 今日の注目ニュース ({date_str})\n\n" + response.text
         
         # Ensure directory exists
-        output_dir = "01_今日の注目ニュース"
+        output_dir = "11_今日の注目ニュース"
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
             
@@ -89,7 +89,7 @@ def generate_curated_news(articles, date_str):
         error_log = f"# Error Log ({datetime.datetime.now()})\n\nError generating curated news:\n{str(e)}"
         
         # Ensure directory exists (even if generation failed)
-        output_dir = "01_今日の注目ニュース"
+        output_dir = "11_今日の注目ニュース"
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
             
@@ -188,7 +188,7 @@ def fetch_rss_feeds(target_date=None):
 
     # Load previous day's URLs to prevent duplicates
     seen_urls = set()
-    prev_filename = os.path.join("00_毎日のAIニュース取得", f"{yesterday.strftime('%Y-%m-%d')}_RSS_Feed.md")
+    prev_filename = os.path.join("10_毎日のAIニュース取得", f"{yesterday.strftime('%Y-%m-%d')}_RSS_Feed.md")
     if os.path.exists(prev_filename):
         try:
             with open(prev_filename, 'r', encoding='utf-8') as f:
@@ -339,7 +339,7 @@ def fetch_rss_feeds(target_date=None):
         content += "No new articles in the last 24 hours.\n"
 
     # Ensure RSS directory exists
-    output_dir = "00_毎日のAIニュース取得"
+    output_dir = "10_毎日のAIニュース取得"
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 

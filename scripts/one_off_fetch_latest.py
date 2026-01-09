@@ -106,7 +106,7 @@ def fetch_rss_feeds():
             content += f"## {name}\nError fetching feed: {e}\n\n"
 
     # Ensure output directory exists (using Japanese name)
-    output_dir = "毎日のAIニュース取得"
+    output_dir = "10_毎日のAIニュース取得"
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
