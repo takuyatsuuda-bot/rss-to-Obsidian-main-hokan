@@ -1,4 +1,4 @@
-# Error Log (2026-01-18 23:21:07.463418)
+# Error Log (2026-01-19 23:22:30.794260)
 
 Error generating curated news:
 404 models/gemini-pro is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
