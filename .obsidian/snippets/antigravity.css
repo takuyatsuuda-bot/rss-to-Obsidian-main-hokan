@@ -1,0 +1,71 @@
+/* Antigravity Theme - Light Blue UI with White Editor */
+body.theme-light,
+body.theme-dark {
+  /* UI Backgrounds (Sidebars, Tab bars, Title bars) - Tokyo Light Cool Grey */
+  --background-secondary: #e3e8ed !important;
+  /* Pale grey-blue for sidebars */
+  --background-secondary-alt: #dce2e8 !important;
+  /* Slightly darker for contrast */
+  --background-modifier-border: #ccd3db !important;
+  /* Borders */
+
+  /* Main Editor Background - White per request */
+  --background-primary: #ffffff !important;
+  --background-primary-alt: #ffffff !important;
+  /* Very subtle blue tint for alternates if needed, or keeping it white-ish */
+
+  /* Text colors */
+  --text-normal: #2a2f35 !important;
+  /* Dark Grey for main content */
+  --text-muted: #5c6b7f !important;
+  --text-accent: #2e7de9 !important;
+  /* Bright blue for links/accents */
+
+  /* UI specific text (on blue background) */
+  --text-on-accent: #ffffff !important;
+
+  /* Tab Bar & Header Customization */
+  /* This ensures the top area remains blue */
+  --tab-container-background: var(--background-secondary) !important;
+  --titlebar-background: var(--background-secondary) !important;
+  --status-bar-background: var(--background-secondary) !important;
+
+  /* Active Tab */
+  --tab-background-active: var(--background-primary) !important;
+  /* White active tab to blend with editor */
+  --tab-text-color-focused-active: var(--text-accent) !important;
+}
+
+/* Specific overrides to ensure the frame is blue but content is white */
+.workspace-tabs.mod-top .workspace-tab-header-container {
+  background-color: var(--background-secondary);
+}
+
+/* Ensure all leaf content defaults to white for the editor */
+.workspace-leaf-content,
+.view-content {
+  background-color: var(--background-primary);
+}
+
+/* Sidebar headers should be blue */
+.workspace-leaf-header,
+.view-header {
+  background-color: var(--background-secondary) !important;
+}
+
+/* Ribbon (Side bar icons) - Make Blue */
+.workspace-ribbon {
+  background-color: var(--background-secondary) !important;
+  border-right: 1px solid var(--background-modifier-border);
+}
+
+/* Sidebar containers (the area behind the leaves if visible) */
+.workspace-split.mod-left-split,
+.workspace-split.mod-right-split {
+  background-color: var(--background-secondary);
+}
+
+/* Fix text color in sidebars if they differ */
+.workspace-leaf-content {
+  color: var(--text-normal);
+}

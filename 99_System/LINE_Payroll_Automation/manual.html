@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LINE勤怠ボット 導入マニュアル</title>
+    <style>
+        body {
+            font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f4f7f6;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        h2 {
+            background-color: #e8f0fe;
+            color: #1967d2;
+            padding: 10px 15px;
+            border-radius: 5px;
+            margin-top: 40px;
+            font-size: 1.2em;
+        }
+        .step {
+            margin-bottom: 20px;
+        }
+        .step-number {
+            display: inline-block;
+            background: #1967d2;
+            color: #fff;
+            width: 24px;
+            height: 24px;
+            text-align: center;
+            line-height: 24px;
+            border-radius: 50%;
+            margin-right: 10px;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+        code {
+            background-color: #f1f1f1;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-family: Consolas, monospace;
+            color: #d63384;
+        }
+        .note {
+            background-color: #fff3cd;
+            border-left: 5px solid #ffc107;
+            padding: 15px;
+            margin: 20px 0;
+            font-size: 0.9em;
+        }
+        a {
+            color: #1967d2;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        .btn {
+            display: inline-block;
+            background-color: #28a745;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            text-decoration: none;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        .btn:hover {
+            background-color: #218838;
+            text-decoration: none;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>LINE勤怠ボット 導入マニュアル</h1>
+    <p>このマニュアルでは、アルバイトさんの勤怠をLINEから自動でスプレッドシートに記録するシステムの作り方を解説します。<br>所要時間は約15分〜20分です。</p>
+
+    <div class="note">
+        <strong>準備するもの:</strong> Googleアカウント、パソコン
+    </div>
+
+    <h2>ステップ 1: スプレッドシートとプログラムの準備</h2>
+    
+    <div class="step">
+        <span class="step-number">1</span>
+        <a href="https://sheets.google.com" target="_blank">Googleスプレッドシート</a>を開き、「空白」の新しいシートを作成します。
+    </div>
+    <div class="step">
+        <span class="step-number">2</span>
+        シートの名前をわかりやすいもの（例: 「給与管理」）に変更します。
+    </div>
+    <div class="step">
+        <span class="step-number">3</span>
+        上部メニューの <strong>「拡張機能」</strong> &gt; <strong>「Apps Script」</strong> をクリックします。
+    </div>
+    <div class="step">
+        <span class="step-number">4</span>
+        エディタ画面が開くので、元々入っている文字をすべて消します。
+    </div>
+    <div class="step">
+        <span class="step-number">5</span>
+        同じフォルダにある <code>check_line_code.txt</code> の中身をすべてコピーして、エディタに貼り付けます。
+    </div>
+    <div class="step">
+        <span class="step-number">6</span>
+        フロッピーディスクのアイコン（保存）をクリックして保存します。プロジェクト名は「勤怠Bot」などでOKです。
+    </div>
+
+    <h2>ステップ 2: LINE公式アカウントの作成</h2>
+
+    <div class="step">
+        <span class="step-number">1</span>
+        <a href="https://developers.line.biz/" target="_blank">LINE Developersコンソール</a> にアクセスし、個人のLINEアカウントでログインします。
+    </div>
+    <div class="step">
+        <span class="step-number">2</span>
+        「新規プロバイダー作成」をクリックし、適当な名前（例: 「マイショップ」）を入力します。
+    </div>
+    <div class="step">
+        <span class="step-number">3</span>
+        「新規チャネル作成」をクリックし、<strong>「Messaging API」</strong> を選択します。
+    </div>
+    <div class="step">
+        <span class="step-number">4</span>
+        必須項目（チャネル名、説明、大業種など）を入力して作成します。
+    </div>
+    <div class="step">
+        <span class="step-number">5</span>
+        作成後、<strong>「Messaging API設定」</strong> タブを開きます。
+    </div>
+    <div class="step">
+        <span class="step-number">6</span>
+        一番下の <strong>「チャネルアクセストークン（長期）」</strong> の「発行」ボタンを押します。表示された長い文字列をコピーしておきます。
+    </div>
+
+    <h2>ステップ 3: プログラムとLINEを接続</h2>
+
+    <div class="step">
+        <span class="step-number">1</span>
+        先ほどの Google Apps Script の画面に戻ります。
+    </div>
+    <div class="step">
+        <span class="step-number">2</span>
+        左側の歯車アイコン <strong>「プロジェクトの設定」</strong> をクリックします。
+    </div>
+    <div class="step">
+        <span class="step-number">3</span>
+        下の方にある <strong>「スクリプトプロパティ」</strong> &gt; <strong>「スクリプトプロパティを追加」</strong> をクリックします。
+        <ul>
+            <li><strong>プロパティ:</strong> <code>CHANNEL_ACCESS_TOKEN</code></li>
+            <li><strong>値:</strong> さきほどコピーした長い文字列</li>
+        </ul>
+    </div>
+    <div class="step">
+        <span class="step-number">4</span>
+        「スクリプトプロパティを保存」をクリックします。
+    </div>
+    <div class="step">
+        <span class="step-number">5</span>
+        右上の青い <strong>「デプロイ」</strong> ボタン &gt; <strong>「新しいデプロイ」</strong> をクリックします。
+        <ul>
+            <li><strong>種類の選択:</strong> 「ウェブアプリ」</li>
+            <li><strong>説明:</strong> 「v1」など</li>
+            <li><strong>次のユーザーとして実行:</strong> 「自分」</li>
+            <li><strong>アクセスできるユーザー:</strong> <span style="color:red; font-weight:bold;">「全員」</span> (※ここが重要です)</li>
+        </ul>
+    </div>
+    <div class="step">
+        <span class="step-number">6</span>
+        「デプロイ」をクリックし、表示された <strong>「ウェブアプリURL」</strong> （https://script.google.com/...）をコピーします。
+    </div>
+
+    <h2>ステップ 4: LINE側の設定</h2>
+
+    <div class="step">
+        <span class="step-number">1</span>
+        LINE Developersコンソールに戻り、<strong>「Messaging API設定」</strong> タブへ行きます。
+    </div>
+    <div class="step">
+        <span class="step-number">2</span>
+        <strong>「Webhook設定」</strong> の「Webhook URL」に、さきほどコピーしたURLを貼り付けます。
+    </div>
+    <div class="step">
+        <span class="step-number">3</span>
+        「検証」ボタンを押します（「成功」と出ればOK。エラーが出てもURLが合っていれば一旦無視してOK）。
+    </div>
+    <div class="step">
+        <span class="step-number">4</span>
+        その下の <strong>「Webhookの利用」</strong> を <strong>オン</strong> にします。
+    </div>
+    <div class="step">
+        <span class="step-number">5</span>
+        さらに下の <strong>「LINE公式アカウント機能」</strong> の 「応答メッセージ」 の横にある「編集」をクリックします。
+        <ul>
+            <li><strong>あいさつメッセージ:</strong> オフ</li>
+            <li><strong>応答メッセージ:</strong> オフ</li>
+            <li><strong>Webhook:</strong> オン</li>
+        </ul>
+    </div>
+
+    <h2>ステップ 5: ボタン（リッチメニュー）を作る</h2>
+
+    <div class="step">
+        <span class="step-number">1</span>
+        <a href="https://manager.line.biz/" target="_blank">LINE Official Account Manager</a> にアクセスし、アカウントを選びます。
+    </div>
+    <div class="step">
+        <span class="step-number">2</span>
+        左メニューの <strong>「ホーム」</strong> &gt; <strong>「トークルーム管理」</strong> &gt; <strong>「リッチメニュー」</strong> をクリックし、「作成」を押します。
+    </div>
+    <div class="step">
+        <span class="step-number">3</span>
+        <strong>表示期間</strong>を2030年など遠い未来に設定します。
+    </div>
+    <div class="step">
+        <span class="step-number">4</span>
+        <strong>コンテンツ設定</strong>でテンプレートを選び、ボタンの画像（文字だけでもOK）を設定します。
+    </div>
+    <div class="step">
+        <span class="step-number">5</span>
+        <strong>アクション</strong>を設定します。ここが重要です！
+        <ul>
+            <li><strong>タイプ:</strong> テキスト</li>
+            <li><strong>テキスト:</strong> 出勤</li>
+            <li>（退勤ボタンも同様に「退勤」、確認ボタンは「確認」と入力）</li>
+        </ul>
+    </div>
+    <div class="step">
+        <span class="step-number">6</span>
+        保存して完了です！
+    </div>
+
+    <h2>完了！</h2>
+    <p>お疲れ様でした。作成したLINE公式アカウントを友だち追加して、「出勤」ボタンを押してテストしてみてください。<br>
+    スプレッドシートに行が追加されれば成功です。</p>
+
+</div>
+
+</body>
+</html>

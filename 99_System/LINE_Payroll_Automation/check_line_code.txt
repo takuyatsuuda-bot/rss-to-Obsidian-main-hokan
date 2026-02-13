@@ -1,0 +1,164 @@
+/**
+ * LINE Bot 給与管理システム (5分まるめ対応版)
+ * 
+ * 使い方:
+ * 1. このコードを Google Apps Script に貼り付けてください。
+ * 2. プロジェクト設定で 'CHANNEL_ACCESS_TOKEN' を設定してください。
+ * 3. ウェブアプリとしてデプロイし、URLをLINEのWebhookに設定してください。
+ */
+
+// --- 設定 ---
+var SHEET_NAME = 'Attendance'; // データ保存用シート名
+var ROUND_UNIT = 5; // 何分単位でまるめるか (5分なら 5)
+
+function doPost(e) {
+  var json = JSON.parse(e.postData.contents);
+  var event = json.events[0];
+  
+  // テキストメッセージ以外は無視
+  if (event.type !== 'message' || event.message.type !== 'text') {
+    return;
+  }
+
+  var replyToken = event.replyToken;
+  var userId = event.source.userId;
+  var userMessage = event.message.text;
+  var replyText = "";
+  var timestamp = new Date(); // 現在時刻
+  
+  if (userMessage === "出勤") {
+    var rounded = roundTime(timestamp, ROUND_UNIT);
+    recordTime(userId, timestamp, rounded, "出勤");
+    replyText = "出勤を記録しました。\n" + formatDate(timestamp) + "\n(給与計算用: " + formatDateTime(rounded) + ")";
+  } 
+  else if (userMessage === "退勤") {
+    var rounded = roundTime(timestamp, ROUND_UNIT);
+    recordTime(userId, timestamp, rounded, "退勤");
+    replyText = "退勤を記録しました。\n" + formatDate(timestamp) + "\n(給与計算用: " + formatDateTime(rounded) + ")\nお疲れ様でした！";
+  } 
+  else if (userMessage === "確認") {
+    var summary = calculateMonthlySummary(userId);
+    replyText = summary;
+  } 
+  else {
+    // 関係ない言葉（または写真など）には反応しない
+    return;
+  }
+
+  sendLineReply(replyToken, replyText);
+}
+
+// データをシートに記録する関数
+function recordTime(userId, rawTime, roundedTime, type) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(SHEET_NAME);
+  
+  // シートがなければ作成
+  if (!sheet) {
+    sheet = ss.insertSheet(SHEET_NAME);
+    sheet.appendRow(["日時(生データ)", "ユーザーID", "種別", "計算用時刻", "年", "月", "日"]);
+  }
+  
+  sheet.appendRow([
+    rawTime,
+    userId,
+    type,
+    formatDateTimeFull(roundedTime), // 計算用は見やすく整形して保存
+    rawTime.getFullYear(),
+    rawTime.getMonth() + 1,
+    rawTime.getDate()
+  ]);
+}
+
+// 今月の状況を集計する関数
+function calculateMonthlySummary(userId) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(SHEET_NAME);
+  if (!sheet) return "まだデータがありません。";
+  
+  var data = sheet.getDataRange().getValues();
+  var totalMinutes = 0;
+  var currentMonth = new Date().getMonth() + 1;
+  var tempIn = null; // 出勤時間の一時保存用
+  
+  // 自分かつ今月のデータだけ抽出
+  var myData = data.filter(function(row) {
+    return row[1] === userId && row[5] === currentMonth;
+  });
+  
+  if (myData.length === 0) return "今月の勤務データはまだありません。";
+
+  // 日付順に並べ替え
+  myData.sort(function(a, b) { return new Date(a[0]) - new Date(b[0]); });
+  
+  // 簡易計算ロジック（出勤→退勤のペアを探す）
+  for (var i = 0; i < myData.length; i++) {
+    var row = myData[i];
+    var type = row[2];
+    var timeStr = row[3]; // 計算用時刻
+    
+    // まるめ済み時刻をDateオブジェクトに戻す（簡略化: シートには文字列で入ってるため）
+    var calcTime = new Date(timeStr);
+    
+    if (type === "出勤") {
+      tempIn = calcTime;
+    } else if (type === "退勤" && tempIn) {
+      if (!isValidDate(tempIn) || !isValidDate(calcTime)) continue;
+      
+      var diffMs = calcTime - tempIn;
+      if (diffMs > 0) {
+         var diffMins = Math.floor(diffMs / 60000);
+         totalMinutes += diffMins;
+      }
+      tempIn = null; // リセット
+    }
+  }
+  
+  var hours = Math.floor(totalMinutes / 60);
+  var minutes = totalMinutes % 60;
+  
+  return "【" + currentMonth + "月の状況】\n" +
+         "勤務時間: " + hours + "時間" + minutes + "分\n" +
+         "(※5分単位で計算中)";
+}
+
+// 時刻をまるめる関数（5分単位など）
+function roundTime(date, unit) {
+  var coeff = 1000 * 60 * unit;
+  // 四捨五入なら Math.round, 切り捨てなら floor, 切り上げなら ceil
+  // ここでは一般的な「その時間に近い方」として四捨五入にします
+  var roundedTimestamp = Math.round(date.getTime() / coeff) * coeff;
+  return new Date(roundedTimestamp);
+}
+
+// LINEに返信する関数
+function sendLineReply(replyToken, text) {
+  var token = PropertiesService.getScriptProperties().getProperty("CHANNEL_ACCESS_TOKEN");
+  var url = "https://api.line.me/v2/bot/message/reply";
+  
+  UrlFetchApp.fetch(url, {
+    method: "post",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer " + token
+    },
+    payload: JSON.stringify({
+      replyToken: replyToken,
+      messages: [{ type: "text", text: text }]
+    })
+  });
+}
+
+// ユーティリティ: 日時のフォーマット
+function formatDate(date) {
+  return Utilities.formatDate(date, "Asia/Tokyo", "MM/dd HH:mm");
+}
+function formatDateTime(date) {
+  return Utilities.formatDate(date, "Asia/Tokyo", "HH:mm");
+}
+function formatDateTimeFull(date) {
+  return Utilities.formatDate(date, "Asia/Tokyo", "yyyy/MM/dd HH:mm:00");
+}
+function isValidDate(d) {
+  return d instanceof Date && !isNaN(d);
+}
